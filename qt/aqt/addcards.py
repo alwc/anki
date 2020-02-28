@@ -166,9 +166,9 @@ class AddCards(QDialog):
 
     def addNote(self, note) -> Optional[Note]:
         note.model()["did"] = self.deckChooser.selectedId()
-        ret = note.dupeOrEmpty()
-        if ret == 1:
-            showWarning(_("The first field is empty."), help="AddItems#AddError")
+        rejection = gui_hooks.add_card_accepts(None, note)
+        if rejection is not None:
+            showWarning(rejection, help="AddItems#AddError")
             return None
         if "{{cloze:" in note.model()["tmpls"][0]["qfmt"]:
             if not self.mw.col.models._availClozeOrds(
@@ -250,3 +250,13 @@ question on all cards."""
             cb()
 
         self.ifCanClose(doClose)
+
+
+def reject_empty_first_field(rejection, note):
+    val = note.fields[0]
+    if not val.strip():
+        return _("The first field is empty.")
+    return rejection
+
+
+gui_hooks.add_card_accepts.append(reject_empty_first_field)
